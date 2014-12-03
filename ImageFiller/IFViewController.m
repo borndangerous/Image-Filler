@@ -63,9 +63,10 @@
 
 #pragma mark - <IFSavePhotoOperationDelegate>
 
-- (void)didSavePhoto:(UIImage *)image
-{
+- (void)didSavePhoto:(UIImage *)image {
     self.totalImagesWrittenCount++;
+    
+    NSLog(@"didSavePhoto: totalImagesWrittenCount now %@", @(self.totalImagesWrittenCount));
     
     [self progress:self.totalImagesWrittenCount
                 of:self.totalImageWriteCount];
@@ -94,6 +95,7 @@
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         self.logMessage.text = log;
+        NSLog(@"%@", log);
     });
 }
 
@@ -105,8 +107,7 @@
     });
 }
 
-- (IBAction)loadImages:(id)sender
-{
+- (IBAction)loadImages:(id)sender {
     [self log:@"loading images"];
     
     self.session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
@@ -114,14 +115,27 @@
     NSURL *tempURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
     
     for (NSInteger index = 0; index < self.totalImageDownloadCount; index++) {
-        NSInteger imageW = 400 + arc4random() % 400;
-        NSInteger imageH = 400 + arc4random() % 200;
+        
+        //NSInteger imageW = 400 + arc4random() % 400;
+        //NSInteger imageH = 400 + arc4random() % 200;
+        NSInteger imageW = 640;
+        NSInteger imageH = 1136;
+        
         NSURL *URL = [NSURL URLWithString:[NSString stringWithFormat:@"http://lorempixel.com/%d/%d/?%i", imageW, imageH, arc4random() % self.totalImageDownloadCount]];
+        if(!URL || URL == nil) {
+            return;
+        }
         NSURLRequest *request = [NSURLRequest requestWithURL:URL];
         NSURLSessionDownloadTask *downloadTask = [self.session downloadTaskWithRequest:request
                                                                      completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
                                                                          NSString *filename = [NSString stringWithFormat:@"image%i.jpg", arc4random()];
                                                                          NSURL *imageURL = [tempURL URLByAppendingPathComponent:filename];
+                                                                         
+                                                                         if(!location || !imageURL) {
+                                                                             return;
+                                                                         } else {
+                                                                             NSLog(@"About to moveItem: %@ / %@", [location absoluteString], [imageURL absoluteString]);
+                                                                         }
                                                                          
                                                                          NSError *fileError;
                                                                          [[NSFileManager defaultManager] moveItemAtURL:location
